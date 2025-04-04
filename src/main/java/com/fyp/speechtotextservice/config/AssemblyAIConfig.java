@@ -1,17 +1,19 @@
 package com.fyp.speechtotextservice.config;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.stereotype.Component;
 
+@Getter
 @Configuration
 @PropertySource("classpath:application.properties")
 public class AssemblyAIConfig {
     
     @Value("${assemblyai.api.key}")
     private String apiKey;
-    
-    public String getApiKey() {
-        return apiKey;
-    }
+
+    @Value("${assemblyai.api.url}")
+    private String assemblyAIBaseUrl;
 } 
