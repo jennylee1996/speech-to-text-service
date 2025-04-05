@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class WebSocketTranscriptionRequest {
-    private String audioData; // Base64 encoded audio data
+    private String audioData;
     private String languageCode;
 } 

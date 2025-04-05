@@ -4,6 +4,7 @@ import com.fyp.speechtotextservice.dto.LinkTranscriptionRequest;
 import com.fyp.speechtotextservice.dto.TranscriptionResponse;
 import com.fyp.speechtotextservice.dto.VideoTranscriptionRequest;
 import com.fyp.speechtotextservice.service.SpeechToTextService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +16,10 @@ import java.io.File;
 @Slf4j
 @RestController
 @RequestMapping("/api")
+@AllArgsConstructor
 public class SpeechToTextController {
 
     private final SpeechToTextService speechToTextService;
-
-    @Autowired
-    public SpeechToTextController(SpeechToTextService speechToTextService) {
-        this.speechToTextService = speechToTextService;
-    }
 
     @PostMapping("/transcribe/video")
     public ResponseEntity<TranscriptionResponse> transcribeVideo(
