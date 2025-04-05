@@ -1,8 +1,11 @@
 package com.fyp.speechtotextservice.controller;
 
+import com.assemblyai.api.RealtimeTranscriber;
+import com.fyp.speechtotextservice.config.AssemblyAIConfig;
 import com.fyp.speechtotextservice.dto.StreamingTranscriptionRequest;
 import com.fyp.speechtotextservice.dto.StreamingTranscriptionResponse;
 import com.fyp.speechtotextservice.service.StreamingTranscriptionService;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -10,24 +13,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.TargetDataLine;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import static java.lang.Thread.interrupted;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/streaming")
+@AllArgsConstructor
 public class StreamingTranscriptionController {
 
     private final StreamingTranscriptionService streamingService;
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
-
-    @Autowired
-    public StreamingTranscriptionController(StreamingTranscriptionService streamingService) {
-        this.streamingService = streamingService;
-    }
+    private final AssemblyAIConfig config;
 
     /**
      * Start a new streaming session

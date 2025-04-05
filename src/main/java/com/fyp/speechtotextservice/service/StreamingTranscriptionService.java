@@ -67,6 +67,13 @@ public class StreamingTranscriptionService {
             }
         }
 
+        if (!activeSessions.containsKey(sessionId)) {
+            try {
+                startWebSocketConnection(sessionId, callback);
+            } catch (URISyntaxException e) {
+                // Error handling
+            }
+        }
         SessionData sessionData = activeSessions.get(sessionId);
         sessionData.callback = callback;
 

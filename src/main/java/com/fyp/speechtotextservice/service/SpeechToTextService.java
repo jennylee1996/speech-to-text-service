@@ -36,38 +36,6 @@ public class SpeechToTextService {
         this.objectMapper = new ObjectMapper();
     }
 
-    // WebSocket transcription
-    public TranscriptionResponse transcribeWebSocketAudio(WebSocketTranscriptionRequest request) throws IOException {
-        // Convert base64 audio to bytes
-        byte[] audioBytes = Base64.getDecoder().decode(request.getAudioData());
-        
-        // Create multipart request
-        RequestBody requestBody = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("audio", "audio.wav",
-                        RequestBody.create(audioBytes, MediaType.parse("audio/wav")))
-                .addFormDataPart("language_code", request.getLanguageCode())
-                .build();
-
-        Request httpRequest = new Request.Builder()
-                .url(config.getAssemblyAIBaseUrl() + "/transcript")
-                .addHeader("Authorization", config.getApiKey())
-                .post(requestBody)
-                .build();
-
-        try (Response response = client.newCall(httpRequest).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("Failed to submit transcription: " + response.body().string());
-            }
-            
-            TranscriptionResponse transcriptionResponse = objectMapper.readValue(
-                    response.body().string(),
-                    TranscriptionResponse.class
-            );
-            return pollTranscriptionResult(transcriptionResponse.getId());
-        }
-    }
-
     // Video transcription
     public TranscriptionResponse transcribeVideo(VideoTranscriptionRequest request) throws IOException {
 
@@ -120,12 +88,12 @@ public class SpeechToTextService {
                 log.info("Transcription completed for URL: {}", mediaUrl);
 
                 if (audioFile.exists()) {
-                    boolean deleted = audioFile.delete();
-                    if (deleted) {
-                        log.info("Deleted temporary audio file: {}", outputFilename);
-                    } else {
-                        log.warn("Failed to delete temporary audio file: {}", outputFilename);
-                    }
+//                    boolean deleted = audioFile.delete();
+//                    if (deleted) {
+//                        log.info("Deleted temporary audio file: {}", outputFilename);
+//                    } else {
+//                        log.warn("Failed to delete temporary audio file: {}", outputFilename);
+//                    }
                 }
                 // Create and return the TranscriptionResponse
                 TranscriptionResponse response = new TranscriptionResponse();
@@ -141,37 +109,4 @@ public class SpeechToTextService {
             throw new IllegalArgumentException("Media URL is not a YouTube URL: " + mediaUrl);
         }
     }
-
-    private TranscriptionResponse pollTranscriptionResult(String transcriptionId) throws IOException {
-        while (true) {
-            Request request = new Request.Builder()
-                    .url(config.getAssemblyAIBaseUrl() + "/transcript/" + transcriptionId)
-                    .addHeader("Authorization", config.getApiKey())
-                    .get()
-                    .build();
-
-            try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Failed to get transcription result: " + response.body().string());
-                }
-
-                TranscriptionResponse result = objectMapper.readValue(
-                        response.body().string(),
-                        TranscriptionResponse.class
-                );
-
-                if ("completed".equals(result.getStatus())) {
-                    return result;
-                } else if ("error".equals(result.getStatus())) {
-                    throw new IOException("Transcription failed: " + result.getError());
-                }
-
-                // Wait for 3 seconds before polling again
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IOException("Transcription polling interrupted", e);
-            }
-        }
-    }
-} 
+}
