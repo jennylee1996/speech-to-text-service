@@ -17,6 +17,6 @@ public class AssemblyAIConfig {
     @Value("${assemblyai.api.url}")
     private String assemblyAIBaseUrl;
 
-    @Value("${assemblyai.api.liveUrl.}")
+    @Value("${assemblyai.api.liveUrl}")
     private String assemblyAILiveUrl;
 } 
