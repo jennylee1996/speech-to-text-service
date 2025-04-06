@@ -55,8 +55,9 @@ public class SpeechToTextController {
     }
 
     @PostMapping("/liveTranscribe")
-    public String liveTranscription(@RequestBody byte[] audioData) {
+    public ResponseEntity<String> liveTranscription(@RequestBody byte[] audioData) {
         realtimeTranscriptionService.sendAudio(audioData);
-        return "Audio chunk received";
+        String latestTranscript = realtimeTranscriptionService.getLatestTranscript();
+        return ResponseEntity.ok(latestTranscript.isEmpty() ? "Processing audio..." : latestTranscript);
     }
 } 
