@@ -1,9 +1,11 @@
 package com.fyp.speechtotextservice.service;
 
+import com.assemblyai.api.AssemblyAI;
+import com.assemblyai.api.resources.transcripts.types.Transcript;
+import com.assemblyai.api.resources.transcripts.types.TranscriptLanguageCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fyp.speechtotextservice.config.AssemblyAIConfig;
 import com.fyp.speechtotextservice.dto.*;
-import com.fyp.speechtotextservice.utils.AssemblyAiConvertor;
 import com.fyp.speechtotextservice.utils.YouTubeDownloader;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -13,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Base64;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -43,7 +45,8 @@ public class SpeechToTextService {
         File videoFile = convertMultipartFileToFile(request.getVideoFile());
 
         // Convert File to Text
-        String transcribedText = AssemblyAiConvertor.convertFileToText(config, videoFile);
+//        String transcribedText = AssemblyAiConvertor.convertFileToText(config, videoFile);
+        String transcribedText = convertFileToText(videoFile);
 
         // Create and return the TranscriptionResponse
         TranscriptionResponse response = new TranscriptionResponse();
@@ -84,7 +87,9 @@ public class SpeechToTextService {
                 }
 
                 // Transcribe using AssemblyAI
-                String transcribedText = AssemblyAiConvertor.convertFileToText(config, audioFile);
+//                String transcribedText = AssemblyAiConvertor.convertFileToText(config, audioFile);
+                String transcribedText = convertFileToText(audioFile);
+
                 log.info("Transcription completed for URL: {}", mediaUrl);
 
                 if (audioFile.exists()) {
@@ -107,6 +112,39 @@ public class SpeechToTextService {
             }
         } else {
             throw new IllegalArgumentException("Media URL is not a YouTube URL: " + mediaUrl);
+        }
+    }
+
+    private String convertFileToText(File file) throws IOException {
+
+        AssemblyAI assemblyAI = AssemblyAI.builder()
+                .apiKey(config.getApiKey())
+                .build();
+
+        // Configure transcription with automatic language detection
+        var transcriptParams = com.assemblyai.api.resources.transcripts.types.TranscriptOptionalParams.builder()
+                .languageDetection(true)
+                .build();
+
+        // Upload and transcribe the audio file
+        log.info("Uploading and transcribing audio from file: {}", file.getAbsolutePath());
+        Transcript transcript = assemblyAI.transcripts().transcribe(file, transcriptParams);
+
+        // Check transcription result
+        if (transcript.getStatus() == null || !transcript.getStatus().toString().equals("completed")) {
+            throw new IOException("Transcription failed: " + transcript.getError());
+        }
+
+        Optional<String> transcribedText = transcript.getText();
+        Optional<TranscriptLanguageCode> detectedLanguage = transcript.getLanguageCode();
+
+        if (transcribedText.isPresent()) {
+            log.info("Transcription completed: {}", transcribedText.get());
+            log.info("Detected language: {}", detectedLanguage);
+            return transcribedText.get();
+        } else {
+            log.warn("Transcription completed but no text was returned.");
+            return null;
         }
     }
 }

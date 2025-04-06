@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 public class TokenService {
 
     private static final Logger log = LoggerFactory.getLogger(TokenService.class);
-    private final WebClient webClient;
+    public final WebClient webClient;
 
     public TokenService(@Value("${assemblyai.api.key}") String apiKey) {
         this.webClient = WebClient.builder()
