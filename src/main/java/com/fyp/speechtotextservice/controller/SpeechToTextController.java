@@ -54,8 +54,8 @@ public class SpeechToTextController {
         }
     }
 
-    @GetMapping("/liveTranscribe")
-    public String testTranscription(@RequestBody byte[] audioData) {
+    @PostMapping("/liveTranscribe")
+    public String liveTranscription(@RequestBody byte[] audioData) {
         realtimeTranscriptionService.sendAudio(audioData);
         return "Audio chunk received";
     }
