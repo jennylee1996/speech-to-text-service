@@ -3,7 +3,7 @@ package com.fyp.speechtotextservice.controller;
 import com.fyp.speechtotextservice.dto.LinkTranscriptionRequest;
 import com.fyp.speechtotextservice.dto.TranscriptionResponse;
 import com.fyp.speechtotextservice.dto.VideoTranscriptionRequest;
-import com.fyp.speechtotextservice.service.RealtimeTranscriptionService;
+import com.fyp.speechtotextservice.service.LiveSpeechToTextService;
 import com.fyp.speechtotextservice.service.SpeechToTextService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class SpeechToTextController {
 
     private final SpeechToTextService speechToTextService;
-    private final RealtimeTranscriptionService realtimeTranscriptionService;
+    private final LiveSpeechToTextService liveSpeechToTextService;
 
     @PostMapping("/transcribe/video")
     public ResponseEntity<TranscriptionResponse> transcribeVideo(
@@ -54,10 +54,14 @@ public class SpeechToTextController {
         }
     }
 
-    @PostMapping("/liveTranscribe")
-    public ResponseEntity<String> liveTranscription(@RequestBody byte[] audioData) {
-        realtimeTranscriptionService.sendAudio(audioData);
-        String latestTranscript = realtimeTranscriptionService.getLatestTranscript();
-        return ResponseEntity.ok(latestTranscript.isEmpty() ? "Processing audio..." : latestTranscript);
+    @PostMapping("/liveTranscribe/audio")
+    public ResponseEntity<String> sendAudio(@RequestBody byte[] audioData) {
+        try {
+            liveSpeechToTextService.sendAudio(audioData);
+            return ResponseEntity.ok("Audio data sent");
+        } catch (Exception e) {
+            log.error("Error sending audio data: {}", e.getMessage());
+            return ResponseEntity.status(500).body("Error sending audio: " + e.getMessage());
+        }
     }
 } 

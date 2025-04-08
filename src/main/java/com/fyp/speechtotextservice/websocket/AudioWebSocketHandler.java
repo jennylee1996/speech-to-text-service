@@ -1,55 +1,53 @@
 package com.fyp.speechtotextservice.websocket;
 
-import com.assemblyai.api.RealtimeTranscriber;
-import org.springframework.beans.factory.annotation.Value;
+import com.fyp.speechtotextservice.service.LiveSpeechToTextService;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 
+@Component
 public class AudioWebSocketHandler extends BinaryWebSocketHandler {
 
-    @Value("${assemblyai.api-key}")
-    private String apiKey;
+    private final LiveSpeechToTextService liveSpeechToTextService;
 
-    private RealtimeTranscriber transcriber;
+    private WebSocketSession currentSession; // Store the session to send transcripts back
+
+    public AudioWebSocketHandler(LiveSpeechToTextService liveSpeechToTextService) {
+        this.liveSpeechToTextService = liveSpeechToTextService;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        transcriber = RealtimeTranscriber.builder()
-                .apiKey(apiKey)
-                .onPartialTranscript(transcript -> {
-                    try {
-                        session.sendMessage(new BinaryMessage(transcript.getText().getBytes()));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                })
-                .onFinalTranscript(transcript -> {
-                    try {
-                        session.sendMessage(new BinaryMessage(transcript.getText().getBytes()));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                })
-                .onError(error -> System.err.println("Error: " + error.getMessage()))
-                .build();
+        System.out.println("WebSocket connection established: " + session.getId());
+        currentSession = session;
 
-        transcriber.connect();
-        System.out.println("WebSocket connection established");
+        liveSpeechToTextService.initWithCallback(transcript -> {
+            try {
+                if (currentSession != null && currentSession.isOpen()) {
+                    System.out.println("Sending transcript: " + transcript);
+                    currentSession.sendMessage(new TextMessage(transcript));
+                } else {
+                    System.out.println("Session closed or null, cannot send: " + transcript);
+                }
+            } catch (Exception e) {
+                System.err.println("Error sending transcript: " + e.getMessage());
+            }
+        });
     }
 
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
-        byte[] audioData = message.getPayload().array();
-        transcriber.sendAudio(audioData);
+        byte[] pcmAudio = message.getPayload().array();
+//        System.out.println("Received PCM audio chunk of size: " + pcmAudio.length);
+        liveSpeechToTextService.sendAudio(pcmAudio);
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        if (transcriber != null) {
-            transcriber.close();
-        }
-        System.out.println("WebSocket connection closed");
+        System.out.println("WebSocket connection closed: " + session.getId());
+        currentSession = null;
     }
 }

@@ -2,24 +2,21 @@ package com.fyp.speechtotextservice.utils;
 
 import com.assemblyai.api.AssemblyAI;
 import com.assemblyai.api.resources.transcripts.types.Transcript;
-import com.fyp.speechtotextservice.config.AssemblyAIConfig;
-import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
 @Slf4j
-@Component
-@AllArgsConstructor
-public final class AssemblyAiConvertor {
+@NoArgsConstructor
+public class AssemblyAiConvertor {
 
-    public static String convertFileToText(AssemblyAIConfig config, File file) throws IOException {
+    public static String convertFileToText(File file) throws IOException {
 
         AssemblyAI assemblyAI = AssemblyAI.builder()
-                .apiKey(config.getApiKey())
+                .apiKey("")
                 .build();
         // Upload and transcribe the audio file
         log.info("Uploading and transcribing audio");
@@ -37,4 +34,5 @@ public final class AssemblyAiConvertor {
         }
         return null;
     }
+
 }
