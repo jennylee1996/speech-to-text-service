@@ -93,12 +93,12 @@ public class SpeechToTextService {
                 log.info("Transcription completed for URL: {}", mediaUrl);
 
                 if (audioFile.exists()) {
-//                    boolean deleted = audioFile.delete();
-//                    if (deleted) {
-//                        log.info("Deleted temporary audio file: {}", outputFilename);
-//                    } else {
-//                        log.warn("Failed to delete temporary audio file: {}", outputFilename);
-//                    }
+                    boolean deleted = audioFile.delete();
+                    if (deleted) {
+                        log.info("Deleted temporary audio file: {}", outputFilename);
+                    } else {
+                        log.warn("Failed to delete temporary audio file: {}", outputFilename);
+                    }
                 }
                 // Create and return the TranscriptionResponse
                 TranscriptionResponse response = new TranscriptionResponse();

@@ -12,18 +12,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @NoArgsConstructor
 public class YouTubeDownloader {
-    
-    /**
-     * Downloads audio from a YouTube URL in MP3 format
-     * 
-     * @param youtubeUrl The YouTube video URL
-     * @param outputPath The path where the audio file should be saved
-     * @throws IOException If there's an error during download
-     * @throws InterruptedException If the process is interrupted
-     */
+
     public static void downloadAudio(String youtubeUrl, String outputPath) throws IOException, InterruptedException {
         log.info("Downloading audio from YouTube URL: {} to {}", youtubeUrl, outputPath);
 
+        String ytDlpPath = "C:\\Users\\jenny\\AppData\\Local\\Programs\\Python\\Python313\\Scripts\\yt-dlp.exe";
 
         File outputFile = new File(outputPath);
         File outputDir = outputFile.getParentFile();
@@ -31,14 +24,10 @@ public class YouTubeDownloader {
             outputDir.mkdirs();
         }
 
-        String ytDlpPath = "C:\\Users\\jenny\\AppData\\Local\\Programs\\Python\\Python313\\Scripts\\yt-dlp.exe";
-        String ffmpegPath = "C:\\ffmpeg\\ffmpeg-7.0.2-full_build\\bin\\ffmpeg.exe";
-
+        // Build the yt-dlp command to download the best audio in its native format
         ProcessBuilder pb = new ProcessBuilder(
                 ytDlpPath,
-                "-x",
-                "--audio-format", "mp3",
-                "--ffmpeg-location", ffmpegPath,
+                "-f", "bestaudio", // Download the best audio stream in its native format
                 youtubeUrl,
                 "-o", outputPath
         );
@@ -71,12 +60,6 @@ public class YouTubeDownloader {
         log.info("Successfully downloaded audio from YouTube URL: {}", youtubeUrl);
     }
 
-    /**
-     * Checks if a URL is a YouTube URL
-     * 
-     * @param url The URL to check
-     * @return true if it's a YouTube URL, false otherwise
-     */
     public static boolean isYouTubeUrl(String url) {
         return url != null && (url.contains("youtube.com") || url.contains("youtu.be"));
     }
