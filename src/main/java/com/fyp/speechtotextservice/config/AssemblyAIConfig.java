@@ -18,4 +18,7 @@ public class AssemblyAIConfig {
 
     @Value("${assemblyai.api.liveUrl}")
     private String assemblyAILiveUrl;
+
+    @Value("${youtube.downloader.path}")
+    private String ytDlpPath;
 } 

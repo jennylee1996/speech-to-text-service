@@ -6,20 +6,23 @@ import com.assemblyai.api.resources.transcripts.types.TranscriptLanguageCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fyp.speechtotextservice.config.AssemblyAIConfig;
 import com.fyp.speechtotextservice.dto.*;
-import com.fyp.speechtotextservice.utils.YouTubeDownloader;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
+@AllArgsConstructor
 public class SpeechToTextService {
 
     private final OkHttpClient client;
@@ -45,7 +48,6 @@ public class SpeechToTextService {
         File videoFile = convertMultipartFileToFile(request.getVideoFile());
 
         // Convert File to Text
-//        String transcribedText = AssemblyAiConvertor.convertFileToText(config, videoFile);
         String transcribedText = convertFileToText(videoFile);
 
         // Create and return the TranscriptionResponse
@@ -73,13 +75,13 @@ public class SpeechToTextService {
         }
 
         // Check if it's a YouTube URL
-        if (YouTubeDownloader.isYouTubeUrl(mediaUrl)) {
+        if (isYouTubeUrl(mediaUrl)) {
             try {
                 String tempDir = "C:/temp";
                 String outputFilename = tempDir + "/youtube_" + System.currentTimeMillis() + ".mp3";
                 
                 log.info("Downloading YouTube audio to: {}", outputFilename);
-                YouTubeDownloader.downloadAudio(mediaUrl, outputFilename);
+                downloadAudio(mediaUrl, outputFilename);
 
                 File audioFile = new File(outputFilename);
                 if (!audioFile.exists() || audioFile.length() == 0) {
@@ -146,5 +148,54 @@ public class SpeechToTextService {
             log.warn("Transcription completed but no text was returned.");
             return null;
         }
+    }
+
+    private void downloadAudio(String youtubeUrl, String outputPath) throws IOException, InterruptedException {
+        log.info("Downloading audio from YouTube URL: {} to {}", youtubeUrl, outputPath);
+
+        File outputFile = new File(outputPath);
+        File outputDir = outputFile.getParentFile();
+        if (outputDir != null && !outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+
+        // Build the yt-dlp command to download the best audio in its native format
+        ProcessBuilder pb = new ProcessBuilder(
+                config.getYtDlpPath(),
+                "-f", "bestaudio", // Download the best audio stream in its native format
+                youtubeUrl,
+                "-o", outputPath
+        );
+        pb.redirectErrorStream(true); // Combine stdout and stderr
+
+        Process process = pb.start();
+
+        // Capture output for debugging and error reporting
+        StringBuilder processOutput = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                log.debug("yt-dlp: {}", line);
+                processOutput.append(line).append("\n");
+            }
+        }
+
+        // Wait with a timeout (e.g., 5 minutes)
+        boolean completed = process.waitFor(5, TimeUnit.MINUTES);
+        if (!completed) {
+            process.destroy();
+            throw new IOException("yt-dlp process timed out after 5 minutes");
+        }
+
+        int exitCode = process.exitValue();
+        if (exitCode != 0) {
+            throw new IOException("yt-dlp failed with exit code " + exitCode + ": " + processOutput.toString());
+        }
+
+        log.info("Successfully downloaded audio from YouTube URL: {}", youtubeUrl);
+    }
+
+    private boolean isYouTubeUrl(String url) {
+        return url != null && (url.contains("youtube.com") || url.contains("youtu.be"));
     }
 }
